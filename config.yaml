@@ -1,0 +1,72 @@
+continual_learning:
+  fisher:
+    estimation_samples: 200
+    normalize: true
+  lambda_ewc: 10.0
+  lambda_kd: 0.5
+  temperature: 2.0
+cost_function:
+  alpha_latency: 0.5
+  beta_energy: 0.5
+  discount_factor: 0.99
+dataset:
+  name: CIFAR10
+  num_samples: null
+  split: noniid
+env:
+  alpha: 1.0
+  beta: 1.0
+  edge_cpu_levels:
+  - 5e9
+  - 7e9
+  - 10e9
+  kappa: 1e-27
+  snr: 10
+  tx_power: 0.5
+experiment:
+  name: CLARA-MEC
+  rounds: 30
+  seed: 42
+  strategy: claramec
+federated_learning:
+  aggregation: fedavg
+  batch_size: 64
+  client_fraction: 0.1
+  local_epochs: 30
+  total_clients: 50
+logging:
+  log_every_round: 1
+  save_metrics: true
+  save_model: true
+model:
+  backbone:
+    activation: relu
+    dropout: 0.35
+    filters:
+    - 32
+    - 64
+    kernel_size: 3
+    type: cnn
+  heads:
+    offloading:
+      activation: linear
+      from_logits: true
+      loss: binary_crossentropy
+    resource_allocation:
+      activation: linear
+      from_logits: true
+      loss: sparse_categorical_crossentropy
+      n_actions: 3
+  input_shape:
+  - 32
+  - 32
+  - 3
+task:
+  cycles_max: 3000000000
+  cycles_min: 500000000
+  size_max: 5000000
+  size_min: 500000
+training:
+  learning_rate: 0.0003
+  optimizer: adam
+  weight_decay: 0.0001

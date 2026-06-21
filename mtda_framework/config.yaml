@@ -1,0 +1,48 @@
+experiment:
+  seed: 42
+  epochs: 50
+  batch_size: 64
+  learning_rate: 0.0003
+
+mec:
+  users: 10
+  edge_servers: 1
+  samples: 10000
+
+  bandwidth_min: 1
+  bandwidth_max: 20
+
+  cpu_min: 0.5
+  cpu_max: 3.0
+
+  channel_gain_min: 0.1
+  channel_gain_max: 1.0
+
+  power_min: 0.1
+  power_max: 2.0
+
+  task_size_min: 0.5
+  task_size_max: 10.0
+
+cost_function:
+  alpha_latency: 0.5
+  beta_energy: 0.5
+
+domain_shift:
+  enabled: true
+
+  bandwidth_shift: 0.45
+  cpu_shift: 0.35
+  workload_shift: 1.20
+  noise_level: 0.25
+
+model:
+  hidden_units: 64
+  dropout: 0.35
+
+continual_learning:
+  lambda_kd: 0.5
+  temperature: 2.0
+
+results:
+  save_dir: "results"

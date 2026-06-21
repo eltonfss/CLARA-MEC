@@ -1,0 +1,23 @@
+"""
+===============================================================================
+seed.py
+
+Define seed global para reprodutibilidade.
+===============================================================================
+"""
+
+import os
+import random
+import numpy as np
+import tensorflow as tf
+
+
+def set_global_seed(seed):
+
+    os.environ["PYTHONHASHSEED"] = str(seed)
+
+    random.seed(seed)
+    np.random.seed(seed)
+    tf.random.set_seed(seed)
+
+    print(f"[Seed] Global seed definida: {seed}")

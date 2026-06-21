@@ -1,0 +1,128 @@
+# ============================================================================= 
+# CLARA-MEC Configuration File 
+# ============================================================================= 
+experiment: 
+  name: "CLARA-MEC" 
+  strategy: "claramec" # claramec | fedavg | fedsgd | fedprox | pfl | heuristic 
+  seed: 42 
+  rounds: 2 #100 
+  clients_per_round: 2 #10 
+
+# ============================================================================= 
+# Dataset Configuration 
+# ============================================================================= 
+dataset: 
+    
+  # dataset utilizado no experimento 
+  name: "CIFAR10" 
+  # opções: 
+  # MNIST 
+  # FMNIST 
+  # CIFAR10 
+  # CIFAR100 
+    
+  # tipo de distribuição federada 
+  split: "noniid" 
+  # opções: 
+  # iid 
+  # noniid 
+    
+  # limitar número de amostras (opcional) 
+  num_samples: null 
+    
+# ============================================================================= 
+# Federated Learning 
+# ============================================================================= 
+federated_learning: 
+  aggregation: "fedavg" 
+  client_fraction: 0.1 
+  local_epochs: 5 
+  batch_size: 32 #16
+    
+# ============================================================================= 
+# Model Architecture 
+# ============================================================================= 
+model: 
+  input_shape: [32, 32, 3] # CIFAR10/CIFAR100 
+  # input_shape: [28, 28, 1] # MNIST/FMNIST 
+  backbone: 
+    type: "cnn" 
+    filters: [32, 64] 
+    kernel_size: 3 
+    activation: "relu" 
+    dropout: 0.3         
+  heads: 
+    offloading: 
+      activation: "linear" # logits 
+      loss: "binary_crossentropy" 
+      from_logits: true 
+    resource_allocation: 
+      activation: "linear" # logits 
+      loss: "sparse_categorical_crossentropy" 
+      from_logits: true 
+      n_actions: 3 
+            
+# ============================================================================= 
+# Training Configuration 
+# ============================================================================= 
+training: 
+  optimizer: "adam" 
+  learning_rate: 0.001 
+  weight_decay: 0.0001 
+    
+# ============================================================================= 
+# Continual Learning 
+# ============================================================================= 
+continual_learning: 
+  lambda_kd: 0.5 
+  lambda_ewc: 10.0 
+  temperature: 2.0 
+  fisher: 
+    estimation_samples: 200 
+    normalize: true 
+        
+# ============================================================================= 
+# Cost Function (Article Section III) 
+# ============================================================================= 
+cost_function: 
+  alpha_latency: 0.5 
+  beta_energy: 0.5 
+  discount_factor: 0.99 
+    
+# ============================================================================= 
+# MEC Environment (MDP) 
+# ============================================================================= 
+env: 
+  # DVFS coefficient 
+  kappa: 1e-27 
+    
+  # transmission power (Watts) 
+  tx_power: 0.5 
+    
+  # signal-to-noise ratio 
+  snr: 10 
+    
+  # weights for reward cost 
+  alpha: 1.0 
+  beta: 1.0 
+    
+  # edge CPU levels for resource allocation policy 
+  edge_cpu_levels: [5e9, 7e9, 10e9]
+    
+# ============================================================================= 
+# Task Generation (Stochastic MDP Transition) 
+# ============================================================================= 
+task: 
+  size_min: 500000 # bits 
+  size_max: 5000000 
+    
+  cycles_min: 500e6 
+  cycles_max: 3000e6 
+    
+# ============================================================================= 
+# Logging 
+# ============================================================================= 
+logging: 
+  save_metrics: true 
+  save_model: true 
+  log_every_round: 1
