@@ -22,7 +22,6 @@ The codebase is organized around a configurable experiment pipeline: `config.yam
 ├── train.py                     # Main Flower federated simulation entry point
 ├── run_experiments.py           # Convenience runner for the configured dataset/strategy
 ├── plot_results.py              # Generates plots from the latest metrics CSV
-├── requirements.txt             # Runtime dependency list
 ├── pyproject.toml               # Package metadata and dependencies
 ├── baselines/                   # Centralized MTDA and heuristic offloading baselines
 ├── federated/                   # Flower client, FL strategies, KD/EWC continual learning
@@ -117,7 +116,28 @@ Evaluation reports loss, offloading accuracy, average latency, average energy co
 ### Prerequisites
 
 - Python 3.10 or newer
-- A virtual environment is strongly recommended
+- UV package manager
+- A virtual environment is strongly recommended; `uv sync` creates and manages `.venv` automatically
+
+### Install UV
+
+If UV is not installed yet, install it with the official standalone installer:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Restart your terminal or reload your shell profile so the `uv` command is available. Then verify the installation:
+
+```bash
+uv --version
+```
+
+Alternatively, if you already use `pipx`, you can install UV with:
+
+```bash
+pipx install uv
+```
 
 # NVIDIA GPU Setup for TensorFlow with UV (Ubuntu)
 
@@ -206,22 +226,30 @@ else:
 ```
 
 
-### Install dependencies
+### Install dependencies with UV
 
-Using `pip` and `requirements.txt`:
+This project uses `pyproject.toml` as the single source of dependency metadata and includes a `uv.lock` file for reproducible installs. Create the virtual environment and install the project with UV:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+uv sync
 ```
 
-Alternatively, install from `pyproject.toml` in editable mode:
+For CI or other reproducible environments where the lock file must not change, use:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .
+uv sync --locked
+```
+
+Then run project commands through UV, for example:
+
+```bash
+uv run python train.py
+```
+
+If you need to update dependencies after editing `pyproject.toml`, refresh the lock file with:
+
+```bash
+uv lock
 ```
 
 > Note: The first run may download TensorFlow/Keras datasets such as CIFAR-10 or MNIST.
@@ -231,13 +259,13 @@ pip install -e .
 Run the default experiment from `config.yaml`:
 
 ```bash
-python train.py
+uv run python train.py
 ```
 
 Or use the convenience wrapper:
 
 ```bash
-python run_experiments.py
+uv run python run_experiments.py
 ```
 
 After training, metrics are saved to `results/` with filenames like:
@@ -249,7 +277,7 @@ CLARA-MEC_metrics_YYYY-MM-DD_HH-MM-SS_CIFAR10.csv
 Generate plots from the latest CSV in `results/`:
 
 ```bash
-python plot_results.py
+uv run python plot_results.py
 ```
 
 Plots are written to `results/plots/`.
