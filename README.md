@@ -119,6 +119,93 @@ Evaluation reports loss, offloading accuracy, average latency, average energy co
 - Python 3.10 or newer
 - A virtual environment is strongly recommended
 
+# NVIDIA GPU Setup for TensorFlow with UV (Ubuntu)
+
+This guide documents the step-by-step configuration performed to enable hardware acceleration (GPU) for TensorFlow using the `uv` package manager on Ubuntu.
+
+---
+
+## 📋 System Prerequisites
+
+Before integrating with Python, the native graphics drivers were installed and verified directly on the host system:
+
+1. **NVIDIA Driver:** Installed via Ubuntu's package manager (`sudo ubuntu-drivers autoinstall`).
+2. **Driver Verification:** Running the following command displays the GPU details (**GeForce RTX 2060**):
+   ```bash
+   nvidia-smi
+   ```
+
+---
+
+## 🛠️ Environment Installation
+
+The virtual environment was built using modern python packages that embed CUDA dependencies directly inside the virtual environment:
+
+```bash
+# Install TensorFlow with integrated CUDA support
+uv pip install "tensorflow[and-cuda]"
+```
+
+---
+
+## 🔗 Symbolic Link Adjustment (VIRTUAL_ENV)
+
+To ensure TensorFlow's internal kernel compiler detects the NVIDIA binary paths, a symbolic link was created for the `ptxas` component:
+
+```bash
+ln -sf $(find $(dirname $(dirname $(uv run python -c "import nvidia.cuda_nvcc; print(nvidia.cuda_nvcc.__file__)"))) -name ptxas -print -quit) .venv/bin/ptxas
+```
+
+---
+
+## 🚀 Resolving the Initialization Error (`Cannot dlopen some GPU libraries`)
+
+The `uv` manager enforces strict environment isolation. To allow TensorFlow to discover the shared NVIDIA libraries (`.so`) installed within your Python package tree, you must explicitly export the correct routes to `LD_LIBRARY_PATH`.
+
+### Persistent Configuration (Zsh)
+
+To make the environment variable configuration permanent across any new terminal session, add the paths to your shell profile:
+
+1. Open your shell configuration file:
+   ```bash
+   nano ~/.zshrc
+   ```
+
+2. Append the following block at the very end of the file:
+   ```bash
+   # Map NVIDIA internal libraries for TensorFlow under UV
+   export LD_LIBRARY_PATH="$HOME/Code/CLARA-MEC/.venv/lib/python3.11/site-packages/nvidia/cudnn/lib:$HOME/Code/CLARA-MEC/.venv/lib/python3.11/site-packages/nvidia/cublas/lib:$HOME/Code/CLARA-MEC/.venv/lib/python3.11/site-packages/nvidia/cufft/lib:$HOME/Code/CLARA-MEC/.venv/lib/python3.11/site-packages/nvidia/curand/lib:$HOME/Code/CLARA-MEC/.venv/lib/python3.11/site-packages/nvidia/cusolver/lib:$HOME/Code/CLARA-MEC/.venv/lib/python3.11/site-packages/nvidia/cusparse/lib:$HOME/Code/CLARA-MEC/.venv/lib/python3.11/site-packages/nvidia/nccl/lib:$HOME/Code/CLARA-MEC/.venv/lib/python3.11/site-packages/nvidia/nvjitlink/lib:$LD_LIBRARY_PATH"
+   ```
+
+3. Reload the active terminal session configuration:
+   ```bash
+   source ~/.zshrc
+   ```
+
+---
+
+## 🧪 Validation Script
+
+To test if the library mapping is working and your GPU is properly recognized by the library framework, run the verification script:
+
+```bash
+uv run test_gpu.py
+```
+
+### Validation Code Utilized (`test_gpu.py`):
+```python
+import tensorflow as tf
+
+print("TensorFlow Version:", tf.__version__)
+gpus = tf.config.list_physical_devices('GPU')
+
+if gpus:
+    print(f"\n✅ Success! TensorFlow is using the GPU: {gpus}")
+else:
+    print("\n❌ GPU not detected. Please verify environment paths.")
+```
+
+
 ### Install dependencies
 
 Using `pip` and `requirements.txt`:
