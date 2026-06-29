@@ -287,9 +287,21 @@ class FlowerClient(fl.client.NumPyClient):
                     d_t = tf.cast(tf.round(tf.sigmoid(off_logits)), tf.int32)
                     r_t = tf.argmax(res_logits, axis=1)
 
+                # Os logits de offloading têm formato (batch, 1). Ao iterar
+                # diretamente sobre esse tensor, cada `decision` ainda possui
+                # shape (1,), o que faz `int(decision.numpy())` falhar com
+                # "only 0-dimensional arrays can be converted to Python scalars"
+                # durante o treinamento Flower/Ray. Achatar ambas as predições
+                # garante um escalar por exemplo no batch antes de chamar o
+                # ambiente MEC.
+                d_t = tf.reshape(d_t, [-1])
+                r_t = tf.reshape(r_t, [-1])
+
                 for decision, resource in zip(d_t, r_t):
 
-                    self.env.step((int(decision.numpy()), int(resource.numpy())))
+                    self.env.step(
+                        (int(decision.numpy().item()), int(resource.numpy().item()))
+                    )
 
         # =============================================================
         # Atualiza Fisher ao final do treinamento local
