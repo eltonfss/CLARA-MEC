@@ -374,13 +374,21 @@ class FlowerClient(fl.client.NumPyClient):
 
             else:
 
-                d_t = tf.cast(tf.round(tf.sigmoid(off_logits)), tf.int32)
-                r_t = tf.argmax(res_logits, axis=1)
+                d_t = tf.cast(tf.sigmoid(off_logits) > 0.5, tf.int32)
+                r_t = tf.argmax(res_logits, axis=1, output_type=tf.int32)
+
+            # Os logits de offloading têm formato (batch, 1). Ao iterar diretamente
+            # sobre esse tensor, cada `decision` ainda possui shape (1,), o que faz
+            # `int(decision.numpy())` falhar com "only 0-dimensional arrays can be
+            # converted to Python scalars" durante a avaliação Flower/Ray.
+            # Achatar ambas as predições garante um escalar por exemplo no batch.
+            d_t = tf.reshape(d_t, [-1])
+            r_t = tf.reshape(r_t, [-1])
 
             for decision, resource in zip(d_t, r_t):
 
                 _, _, _, info = self.env.step(
-                    (int(decision.numpy()), int(resource.numpy()))
+                    (int(decision.numpy().item()), int(resource.numpy().item()))
                 )
 
                 total_latency += info["latency"]
