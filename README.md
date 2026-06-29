@@ -334,6 +334,11 @@ The project sets random seeds from `experiment.seed` and uses `utils/seed.py` to
 
 ## Troubleshooting
 
+
+### Flower/Ray evaluation scalar conversion error
+
+If a simulation fails during client evaluation with `TypeError: only 0-dimensional arrays can be converted to Python scalars`, verify that action tensors passed to `MECEnvironment.step()` are flattened before Python scalar conversion. The offloading head returns logits with shape `(batch, 1)`, so iterating over the raw prediction tensor yields one-dimensional arrays such as `[1]` instead of scalar values. The client evaluation path now reshapes both offloading decisions and resource predictions to one-dimensional tensors and extracts scalar values with `.item()` before calling the MEC environment.
+
 ### Dataset download or network failures
 
 If TensorFlow cannot download a Keras dataset, verify network access or pre-populate the Keras dataset cache in your environment.
