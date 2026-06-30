@@ -20,6 +20,7 @@ Autor: Nelson Machado Junior
 
 import os
 import csv
+import time
 import yaml
 from datetime import datetime
 
@@ -31,6 +32,17 @@ with open(CONFIG_FILE, "r") as f:
 
 dataset = config["dataset"]["name"]
 baseline = config["experiment"]["name"]
+
+
+def format_duration(seconds):
+    seconds = max(0, int(seconds))
+    hours, remainder = divmod(seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    if hours:
+        return f"{hours}h {minutes:02d}m {seconds:02d}s"
+    if minutes:
+        return f"{minutes}m {seconds:02d}s"
+    return f"{seconds}s"
 
 
 class MetricsLogger:
@@ -47,6 +59,8 @@ class MetricsLogger:
         )
 
         self.metrics = []
+        self.started_at = time.monotonic()
+        self.total_rounds = int(config.get("experiment", {}).get("rounds", 0) or 0)
 
         self.fieldnames = [
             "round",
@@ -116,8 +130,29 @@ class MetricsLogger:
         }
 
         self.metrics.append(result)
+        self.save()
+        self.print_round_progress(result)
 
         return result
+
+    def print_round_progress(self, result):
+        current_round = len(self.metrics)
+        total_rounds = self.total_rounds or current_round
+        percent = min(100.0, current_round / total_rounds * 100)
+        elapsed = time.monotonic() - self.started_at
+        eta = None
+        if current_round and self.total_rounds and current_round < self.total_rounds:
+            eta = elapsed / current_round * (self.total_rounds - current_round)
+
+        print(
+            "📈 Round "
+            f"{current_round}/{total_rounds} ({percent:.1f}%) "
+            f"loss={result.get('loss', 0):.6f} "
+            f"accuracy={result.get('accuracy', 0):.4f} "
+            f"elapsed={format_duration(elapsed)} "
+            f"eta={format_duration(eta) if eta is not None else 'done'}",
+            flush=True,
+        )
 
     # -------------------------------------------------------------------------
     # Salvar métricas em arquivo CSV

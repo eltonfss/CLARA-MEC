@@ -411,3 +411,26 @@ To document the generated config variations without launching training:
 ```bash
 python experiments/aggregation_hypothesis_sweep.py --dry-run
 ```
+
+Interrupted or long-running sweeps are resumable. The sweep writes `state.json`
+checkpoints in the run directory after initialization, before each hypothesis,
+after each completed hypothesis, and after failures or interrupts. If you press
+`Ctrl+C`, restart from the last completed hypothesis with:
+
+```bash
+python experiments/aggregation_hypothesis_sweep.py --resume latest
+```
+
+or resume an explicit run directory:
+
+```bash
+python experiments/aggregation_hypothesis_sweep.py \
+  --resume results/aggregation_hypothesis_sweep/<timestamp>
+```
+
+During execution, the sweep prints hypothesis-level progress, completed/pending
+counts, percentage complete, and ETA. The training metrics logger also writes the
+metrics CSV after every evaluation round and prints round-level progress, so a
+server shutdown still leaves the latest completed round metrics on disk. A
+partially interrupted hypothesis is re-run on resume because Flower server/model
+state is not fully serialized, but already completed hypotheses are skipped.
