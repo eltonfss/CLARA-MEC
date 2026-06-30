@@ -48,7 +48,33 @@ test_dataset = None
 # =============================================================================
 # CARREGAMENTO DE DATASETS
 # =============================================================================
-def load_dataset(dataset_name="CIFAR10"):
+def limit_dataset_samples(x_train, y_train, x_test, y_test, num_samples):
+    """
+    Limita a quantidade de amostras usadas em experimentos rápidos.
+
+    O limite é aplicado antes da criação dos rótulos multitarefa e antes da
+    divisão federada. A mesma proporção aproximada é aplicada ao conjunto de
+    teste para reduzir também o custo de avaliação por rodada.
+    """
+    if num_samples is None:
+        return x_train, y_train, x_test, y_test
+
+    num_samples = int(num_samples)
+    if num_samples <= 0:
+        raise ValueError("dataset.num_samples deve ser positivo ou null.")
+
+    train_limit = min(num_samples, len(x_train))
+    test_limit = min(max(1, num_samples // 5), len(x_test))
+
+    return (
+        x_train[:train_limit],
+        y_train[:train_limit],
+        x_test[:test_limit],
+        y_test[:test_limit],
+    )
+
+
+def load_dataset(dataset_name="CIFAR10", num_samples=None):
     """
     Carrega datasets reais disponíveis no TensorFlow/Keras.
 
@@ -142,6 +168,14 @@ def load_dataset(dataset_name="CIFAR10"):
     else:
 
         raise ValueError(f"Dataset {dataset_name} não suportado.")
+
+    x_train, y_train, x_test, y_test = limit_dataset_samples(
+        x_train,
+        y_train,
+        x_test,
+        y_test,
+        num_samples,
+    )
 
     return (x_train, y_train), (x_test, y_test)
 
@@ -300,7 +334,10 @@ def prepare_federated_data(config):
     # -------------------------------------------------------------------------
     # Carrega dataset
     # -------------------------------------------------------------------------
-    (x_train, y_train), (x_test, y_test) = load_dataset(dataset_name)
+    (x_train, y_train), (x_test, y_test) = load_dataset(
+        dataset_name,
+        config["dataset"].get("num_samples"),
+    )
 
     # -------------------------------------------------------------------------
     # Cria labels multitarefa (Multitask labels)
