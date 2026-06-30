@@ -357,3 +357,57 @@ Federated simulations with many clients, many rounds, and large local epochs can
 ## License
 
 No explicit license file is currently included in this repository. Add a license before distributing or publishing the project.
+
+## CLARA-MEC aggregation convergence hypotheses
+
+The default CLARA-MEC configuration is intentionally challenging: CIFAR-10 is split with the `noniid` partitioner, 50 clients are created, only `client_fraction: 0.1` participates in each round, and each selected client trains for `local_epochs: 30`. This means each server update can be dominated by five highly skewed client distributions after a large amount of local optimization. In that setting, a round-to-round loss increase does not necessarily mean a coding failure, but persistent oscillation is a strong sign of client drift and high aggregation variance.
+
+Potential issues and hypotheses to validate:
+
+1. **Sparse client participation under non-IID data.** With 50 total clients and a 0.1 fit fraction, only five clients contribute to each round. If the non-IID split gives those clients very different label mixtures, the aggregated model can move in inconsistent directions across rounds. Try `client_fraction: 0.5` or `client_fraction: 1.0`.
+2. **Too many local epochs before aggregation.** `local_epochs: 30` can overfit each selected client's local distribution and amplify drift. Try `local_epochs: 5` while keeping the rest of CLARA-MEC unchanged.
+3. **Client count changes the amount of data per client.** Fewer clients, such as `total_clients: 20`, increases samples per client and can make each update less noisy. Pairing fewer clients with `client_fraction: 0.5` tests whether convergence improves because the server aggregates more representative updates.
+4. **IID versus non-IID sampling.** If `dataset.split: iid` converges while `dataset.split: noniid` oscillates, the main cause is data heterogeneity rather than the optimizer or model architecture.
+5. **FedProx as an aggregation-side stabilizer.** Switching `experiment.strategy` to `fedprox`, reducing local epochs, and increasing participation can limit local drift on non-IID data.
+
+The repository includes `experiments/aggregation_hypothesis_sweep.py` to generate and evaluate these variants. It writes every tested YAML file, runs `train.py` once per hypothesis, copies each metrics CSV to a stable folder, and generates:
+
+- `hypotheses.yaml`: the hypothesis text and corresponding config file for each run.
+- `summary.csv`: initial/final/best loss, loss delta, loss standard deviation, oscillation rate, and a simple convergence flag.
+- `loss_curves.png`: one curve per configuration for visual convergence inspection.
+
+Example usage:
+
+```bash
+python experiments/aggregation_hypothesis_sweep.py
+```
+
+For a fast smoke test that only validates the workflow, use fewer rounds and samples:
+
+```bash
+python experiments/aggregation_hypothesis_sweep.py --rounds 3 --num-samples 1000
+```
+
+For the quickest convergence diagnostic, use the fast preset. It runs only the
+baseline, higher-participation non-IID, and IID hypotheses with three rounds,
+1,000 training samples, and three local epochs:
+
+```bash
+python experiments/aggregation_hypothesis_sweep.py --fast
+```
+
+You can also run only the hypotheses you care about:
+
+```bash
+python experiments/aggregation_hypothesis_sweep.py \
+  --hypotheses baseline_noniid_sparse_clients,iid_sparse_clients \
+  --rounds 5 \
+  --num-samples 2000 \
+  --local-epochs 3
+```
+
+To document the generated config variations without launching training:
+
+```bash
+python experiments/aggregation_hypothesis_sweep.py --dry-run
+```

@@ -66,9 +66,7 @@ def aggregate_metrics(metrics):
 def create_fedavg_strategy(config, metrics_logger):
 
     return fl.server.strategy.FedAvg(
-        # fraction_fit=config["federated_learning"]["client_fraction"], # x% de total_clients participam por rodada
-        # min_fit_clients=config["experiment"]["clients_per_round"], # Número mínimo de clientes de treino
-        fraction_fit=0.1, # x% de total_clients participam por rodada
+        fraction_fit=config["federated_learning"]["client_fraction"], # x% de total_clients participam por rodada
         fraction_evaluate=1.0, # Todos avaliam o modelo global
         min_fit_clients=max(
             1,
@@ -139,7 +137,7 @@ def create_fedprox_strategy(config, metrics_logger):
         ), # Número mínimo de clientes de treino
         min_evaluate_clients=config["federated_learning"]["total_clients"],
         min_available_clients=config["federated_learning"]["total_clients"],
-        proximal_mu=0.01,
+        proximal_mu=config["federated_learning"].get("proximal_mu", 0.01),
         on_fit_config_fn=lambda rnd: {"round": rnd}, # Config repassada aos clientes
         
         # métricas de treino
